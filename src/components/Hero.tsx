@@ -119,7 +119,7 @@ export const Hero = () => {
 
                                 {/* Resume */}
                                 <a
-                                    href="https://drive.google.com/file/d/1La1xwm9LnG-JjmlI5-9m6y30cfvpNLid/view?usp=sharing"
+                                    href="https://drive.google.com/file/d/1U0nQTr9wtdNMmuYT7eQc0_FC3UiL3dT7/view?usp=sharing"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full sm:w-auto px-8 py-4 bg-transparent border-2 border-slate-700/50 text-slate-200 font-bold rounded-xl transition-all duration-300 hover:border-indigo-500/60 text-center backdrop-blur-sm shadow-[0_0_0px_rgba(99,102,241,0)] hover:shadow-[0_0_30px_rgba(99,102,241,0.35),0_0_60px_rgba(99,102,241,0.15)]"

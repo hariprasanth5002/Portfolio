@@ -46,7 +46,7 @@ export const Contact = () => {
     };
 
     return (
-        <section id="contact" className="py-24 px-6 bg-[#020617] relative overflow-hidden">
+        <section id="contact" className="py-14 px-6 bg-[#020617] relative overflow-hidden">
             {/* Glow gradient background */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] rounded-full bg-gradient-to-tr from-indigo-900/20 via-[#38bdf8]/10 to-[#22c55e]/10 blur-[150px] pointer-events-none" />
 
@@ -91,7 +91,7 @@ export const Contact = () => {
                             <FaLinkedin /> LinkedIn
                         </a>
                         <a
-                            href="https://drive.google.com/file/d/1La1xwm9LnG-JjmlI5-9m6y30cfvpNLid/view?usp=sharing"
+                            href="https://drive.google.com/file/d/1U0nQTr9wtdNMmuYT7eQc0_FC3UiL3dT7/view?usp=sharing"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-8 py-4 bg-[#020617] text-slate-300 rounded-xl border border-gray-700 hover:border-[#22c55e] hover:text-[#22c55e] hover:-translate-y-1 transition-all font-medium"

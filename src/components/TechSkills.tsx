@@ -105,10 +105,10 @@ const SkillNode = ({
 
 export const TechSkills = () => {
     return (
-        <section id="skills" className="bg-[#020617] py-20 px-6 overflow-hidden">
+        <section id="skills" className="bg-[#020617] py-12 px-6 overflow-hidden">
             <div className="max-w-[1200px] mx-auto flex flex-col items-center">
                 {/* Section Header */}
-                <div className="flex flex-col items-center text-center mb-[60px]">
+                <div className="flex flex-col items-center text-center mb-8">
                     <h2 className="text-3xl md:text-4xl font-bold font-heading text-slate-100 mb-2 tracking-tight">
                         Skills & Technologies
                     </h2>

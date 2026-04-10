@@ -26,7 +26,7 @@ export const Footer = () => {
                         <FaLinkedin className="text-xl" />
                     </a>
                     <a
-                        href="https://drive.google.com/file/d/1La1xwm9LnG-JjmlI5-9m6y30cfvpNLid/view?usp=sharing"
+                        href="https://drive.google.com/file/d/1U0nQTr9wtdNMmuYT7eQc0_FC3UiL3dT7/view?usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-500 hover:text-[#22c55e] transition-colors"

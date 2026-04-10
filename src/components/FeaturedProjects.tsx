@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { FaGithub, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaGithub, FaChevronLeft, FaChevronRight, FaExternalLinkAlt } from "react-icons/fa";
 import { projects } from "@/data/projects";
 
 export const FeaturedProjects = () => {
@@ -18,7 +18,7 @@ export const FeaturedProjects = () => {
     };
 
     return (
-        <section id="projects" className="py-10 px-2 bg-[#0F172A] relative overflow-hidden">
+        <section id="projects" className="py-6 px-2 bg-[#0F172A] relative overflow-hidden">
             <div className="max-w-6xl mx-auto z-10 relative">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -26,7 +26,7 @@ export const FeaturedProjects = () => {
                     viewport={{ once: true, margin: "-50px" }}
                     transition={{ duration: 0.6 }}
                 >
-                    <div className="flex flex-col items-center mb-10 text-center">
+                    <div className="flex flex-col items-center mb-5 text-center">
                         <div className="inline-block px-3 py-1 mb-3 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono tracking-wider">
                             PROJECTS.CORE
                         </div>
@@ -55,7 +55,7 @@ export const FeaturedProjects = () => {
                     {/* Horizontal scroll container */}
                     <div
                         ref={scrollRef}
-                        className="flex gap-10 overflow-x-auto pt-6 pb-12 snap-x snap-mandatory scrollbar-hide no-scrollbar px-6 lg:px-12"
+                        className="flex gap-10 overflow-x-auto pt-2 pb-4 snap-x snap-mandatory scrollbar-hide no-scrollbar px-6 lg:px-12"
                         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                     >
                         {projects.map((project, index) => (
@@ -89,15 +89,25 @@ export const FeaturedProjects = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-auto">
+                                <div className="mt-auto flex flex-wrap gap-3">
                                     <a
                                         href={project.github}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white text-xs font-bold hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all"
+                                        className="flex-1 min-w-[120px] inline-flex justify-center items-center gap-2 rounded-lg px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-800 border border-slate-600 text-white text-xs font-bold hover:bg-slate-700 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all"
                                     >
-                                        <FaGithub /> View Source
+                                        <FaGithub /> Source
                                     </a>
+                                    {project.live && (
+                                        <a
+                                            href={project.live}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 min-w-[120px] inline-flex justify-center items-center gap-2 rounded-lg px-4 py-2 bg-gradient-to-r from-indigo-600 to-cyan-600 border border-cyan-500/50 text-white text-xs font-bold hover:shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all"
+                                        >
+                                            <FaExternalLinkAlt /> Live
+                                        </a>
+                                    )}
                                 </div>
                             </motion.div>
                         ))}

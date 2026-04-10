@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export const About = () => {
     return (
-        <section id="about" className="py-24 px-6 bg-[#0F172A] relative overflow-hidden">
+        <section id="about" className="py-14 px-6 bg-[#0F172A] relative overflow-hidden">
             {/* Background ambient light */}
             <div className="absolute top-[30%] -right-[10%] w-[30vw] h-[30vw] rounded-full bg-indigo-900/10 blur-[100px] pointer-events-none" />
 
