@@ -91,7 +91,7 @@ export const Contact = () => {
                             <FaLinkedin /> LinkedIn
                         </a>
                         <a
-                            href="https://drive.google.com/file/d/1U0nQTr9wtdNMmuYT7eQc0_FC3UiL3dT7/view?usp=sharing"
+                            href="https://drive.google.com/file/d/1Z73iIxgxFkdyyKNLa7-SGfK2AzqlLmo9/view?usp=sharing"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-8 py-4 bg-[#020617] text-slate-300 rounded-xl border border-gray-700 hover:border-[#22c55e] hover:text-[#22c55e] hover:-translate-y-1 transition-all font-medium"
