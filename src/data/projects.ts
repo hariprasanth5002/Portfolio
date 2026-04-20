@@ -12,7 +12,7 @@ export const projects: Project[] = [
         description: "An end-to-end intelligent agricultural advisor leveraging Vision Transformers, NLP, and real-time RAG to provide smallholder farmers with actionable insights on crop health and hyperlocal weather via an intuitive mobile-first web app.",
         tech: ["Python", "FastAPI", "React", "NLP", "RAG"],
         github: "https://github.com/hariprasanth5002/agri-ai",
-        live: "https://agri-ai-indol.vercel.app?_vercel_share=bLfLZs92zI3bHnH9KPNZWaiikxuay5YY",
+        live: "https://agri-ai-five-iota.vercel.app?_vercel_share=WF12kiNAVgjIQAkLaSQjYX3OdFT6A4qm",
     },
     {
         title: "PlantDisease Ensemble ViT Swin",
