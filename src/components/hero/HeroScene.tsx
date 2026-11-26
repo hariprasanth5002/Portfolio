@@ -68,7 +68,6 @@ function NeuralCore() {
 }
 
 export default function HeroScene() {
-    const [reducedMotion, setReducedMotion] = [false, () => {}] as const;
     return (
         <Canvas
             camera={{ position: [0, 0, 10], fov: 45 }}
