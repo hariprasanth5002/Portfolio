@@ -1,217 +1,159 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-// ────────────────────────────────────────────────────────
-// Developer Production Grade "Plexus" Interactive Constellation
-// ────────────────────────────────────────────────────────
+const PARTICLE_COUNT = 185;
+const MAX_DISTANCE = 2.35;
+const MOUSE_RADIUS = 2.8;
+const MAX_LINES = 2600;
+
+type Particle = { x: number; y: number; z: number; bx: number; by: number; bz: number; vx: number; vy: number; vz: number };
+
 export function ParticleConstellation() {
     const pointsRef = useRef<THREE.Points>(null!);
     const linesRef = useRef<THREE.LineSegments>(null!);
-    const { viewport } = useThree();
+    const { viewport, size } = useThree();
+    const mouse = useRef(new THREE.Vector2(-100, -100));
+    const targetMouse = useRef(new THREE.Vector2(-100, -100));
 
-    const PARTICLE_COUNT = 300;
-    const MAX_DISTANCE = 2.5; // Max distance to draw a line between nodes
-    const MOUSE_RADIUS = 3.5; // distance mouse affects particles
-
-    const mouse = useRef(new THREE.Vector2(-1000, -1000));
-    const targetMouse = useRef(new THREE.Vector2(-1000, -1000));
-
-    // Listen for mouse movement
     useEffect(() => {
-        const onMouseMove = (event: MouseEvent) => {
-            targetMouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-            targetMouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const onMove = (event: PointerEvent) => {
+            targetMouse.current.set(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
         };
-        const onMouseLeave = () => {
-            targetMouse.current.set(-1000, -1000); // Send mouse away
-        };
-        window.addEventListener("mousemove", onMouseMove);
-        document.body.addEventListener("mouseleave", onMouseLeave);
+        const onLeave = () => targetMouse.current.set(-100, -100);
+        window.addEventListener("pointermove", onMove, { passive: true });
+        window.addEventListener("blur", onLeave);
         return () => {
-            window.removeEventListener("mousemove", onMouseMove);
-            document.body.removeEventListener("mouseleave", onMouseLeave);
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("blur", onLeave);
         };
     }, []);
 
-    // Generate initial particle properties
-    const particles = useMemo(() => {
-        const temp = [];
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            // Distribute in a wide 3D space
-            const x = (Math.random() - 0.5) * 25;
-            const y = (Math.random() - 0.5) * 15;
-            const z = (Math.random() - 0.5) * 10 - 2;
+    const particles = useMemo<Particle[]>(() => Array.from({ length: PARTICLE_COUNT }, () => {
+        const x = (Math.random() - 0.5) * 23;
+        const y = (Math.random() - 0.5) * 13;
+        const z = (Math.random() - 0.5) * 8 - 2;
+        return { x, y, z, bx: x, by: y, bz: z, vx: (Math.random() - 0.5) * 0.12, vy: (Math.random() - 0.5) * 0.12, vz: (Math.random() - 0.5) * 0.08 };
+    }), []);
 
-            temp.push({
-                x, y, z,
-                baseX: x, baseY: y, baseZ: z,
-                vx: (Math.random() - 0.5) * 0.01,
-                vy: (Math.random() - 0.5) * 0.01,
-                vz: (Math.random() - 0.5) * 0.01,
-            });
-        }
-        return temp;
-    }, []);
+    const buffers = useMemo(() => ({
+        points: new Float32Array(PARTICLE_COUNT * 3),
+        pointColors: new Float32Array(PARTICLE_COUNT * 3),
+        lines: new Float32Array(MAX_LINES * 6),
+        lineColors: new Float32Array(MAX_LINES * 6),
+    }), []);
 
-    // Pre-allocate geometry arrays for lines and points
-    // Max lines = PARTICLE_COUNT * (PARTICLE_COUNT - 1) / 2
-    // We'll allocate a safe upper bound
-    const maxLineCount = 3000;
-    const linePositions = useMemo(() => new Float32Array(maxLineCount * 6), []);
-    const lineColors = useMemo(() => new Float32Array(maxLineCount * 6), []);
+    const cyan = useMemo(() => new THREE.Color("#22d3ee"), []);
+    const violet = useMemo(() => new THREE.Color("#6366f1"), []);
+    const white = useMemo(() => new THREE.Color("#e0f2fe"), []);
+    const colorA = useMemo(() => new THREE.Color(), []);
+    const colorB = useMemo(() => new THREE.Color(), []);
 
-    const pointPositions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
-    const pointColors = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
-
-    const cyanColor = new THREE.Color("#22d3ee");
-    const indigoColor = new THREE.Color("#4f46e5");
-    const mouseColor = new THREE.Color("#ffffff");
-
-    // Reusable vector for calculations
-    const vec3Dummy = useMemo(() => new THREE.Vector3(), []);
-
-    useFrame(() => {
+    useFrame((_, delta) => {
         if (!pointsRef.current || !linesRef.current) return;
-
-        // Smoothly interpolate mouse target
-        mouse.current.lerp(targetMouse.current, 0.1);
-
-        // Convert normalized mouse to world coords
-        const mouseWorldX = (mouse.current.x * viewport.width) / 2;
-        const mouseWorldY = (mouse.current.y * viewport.height) / 2;
-
+        const dt = Math.min(delta, 0.033);
+        mouse.current.lerp(targetMouse.current, 1 - Math.exp(-dt * 5));
+        const mx = mouse.current.x * viewport.width * 0.5;
+        const my = mouse.current.y * viewport.height * 0.5;
+        const radiusSq = MOUSE_RADIUS * MOUSE_RADIUS;
         let lineIndex = 0;
 
-        // 1. Update Particle Positions and Point Array
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
 
-            // Slowly move points
-            p.x += p.vx;
-            p.y += p.vy;
-            p.z += p.vz;
+            if (p.x < -12 || p.x > 12) p.vx *= -1;
+            if (p.y < -7 || p.y > 7) p.vy *= -1;
+            if (p.z < -8 || p.z > 2) p.vz *= -1;
 
-            // Bounce off invisible walls to keep them moving
-            if (p.x < -15 || p.x > 15) p.vx *= -1;
-            if (p.y < -10 || p.y > 10) p.vy *= -1;
-            if (p.z < -10 || p.z > 5) p.vz *= -1;
-
-            // Mouse Repulsion & Attraction
-            const dxMouse = p.x - mouseWorldX;
-            const dyMouse = p.y - mouseWorldY;
-            // Assume mouse is at z=0 for interaction
-            const dzMouse = p.z - 0;
-            const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse + dzMouse * dzMouse);
-
-            // Interpolated color based on position
-            vec3Dummy.set(p.x, p.y, p.z);
-            let pColor = cyanColor.clone().lerp(indigoColor, (p.x + 15) / 30);
-
-            if (distMouse < MOUSE_RADIUS) {
-                // Gently push particles away from cursor while highlighting them
-                const force = (MOUSE_RADIUS - distMouse) / MOUSE_RADIUS;
-                p.x += (dxMouse / distMouse) * force * 0.05;
-                p.y += (dyMouse / distMouse) * force * 0.05;
-
-                // Glow white when mouse is close
-                pColor.lerp(mouseColor, force);
+            const dx = p.x - mx;
+            const dy = p.y - my;
+            const d2 = dx * dx + dy * dy + p.z * p.z * 0.12;
+            let influence = 0;
+            if (d2 < radiusSq) {
+                influence = 1 - Math.sqrt(d2) / MOUSE_RADIUS;
+                const push = influence * dt * 1.9;
+                p.x += dx * push;
+                p.y += dy * push;
             } else {
-                // Gently pull back to base constraint if drifting too far from 0
-                p.x += (p.baseX - p.x) * 0.001;
-                p.y += (p.baseY - p.y) * 0.001;
+                p.x += (p.bx - p.x) * dt * 0.035;
+                p.y += (p.by - p.y) * dt * 0.035;
             }
 
-            // Write point position
-            pointPositions[i * 3] = p.x;
-            pointPositions[i * 3 + 1] = p.y;
-            pointPositions[i * 3 + 2] = p.z;
+            const mix = THREE.MathUtils.clamp((p.x + 12) / 24, 0, 1);
+            colorA.copy(cyan).lerp(violet, mix).lerp(white, influence * 0.8);
+            const k = i * 3;
+            buffers.points[k] = p.x;
+            buffers.points[k + 1] = p.y;
+            buffers.points[k + 2] = p.z;
+            buffers.pointColors[k] = colorA.r;
+            buffers.pointColors[k + 1] = colorA.g;
+            buffers.pointColors[k + 2] = colorA.b;
 
-            // Write point color
-            pointColors[i * 3] = pColor.r;
-            pointColors[i * 3 + 1] = pColor.g;
-            pointColors[i * 3 + 2] = pColor.b;
+            for (let j = i + 1; j < PARTICLE_COUNT && lineIndex < MAX_LINES; j++) {
+                const q = particles[j];
+                const lx = p.x - q.x;
+                const ly = p.y - q.y;
+                const lz = p.z - q.z;
+                const distSq = lx * lx + ly * ly + lz * lz;
+                if (distSq > MAX_DISTANCE * MAX_DISTANCE) continue;
 
-            // 2. Calculate Lines Between Nearby Particles
-            for (let j = i + 1; j < PARTICLE_COUNT; j++) {
-                const p2 = particles[j];
-                const dx = p.x - p2.x;
-                const dy = p.y - p2.y;
-                const dz = p.z - p2.z;
-                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                const alpha = 1 - Math.sqrt(distSq) / MAX_DISTANCE;
+                const offset = lineIndex * 6;
+                buffers.lines[offset] = p.x;
+                buffers.lines[offset + 1] = p.y;
+                buffers.lines[offset + 2] = p.z;
+                buffers.lines[offset + 3] = q.x;
+                buffers.lines[offset + 4] = q.y;
+                buffers.lines[offset + 5] = q.z;
 
-                if (dist < MAX_DISTANCE && lineIndex < maxLineCount) {
-                    // Line exists. Calculate its opacity/color based on distance
-                    const alpha = 1.0 - (dist / MAX_DISTANCE);
-
-                    // We can bake opacity into the RGB color for LineBasicMaterial
-                    // by multiplying the base color by alpha (essentially an additive blend effect)
-                    // If we use transparent line material with vertex colors, ThreeJS allows this.
-
-                    linePositions[lineIndex * 6] = p.x;
-                    linePositions[lineIndex * 6 + 1] = p.y;
-                    linePositions[lineIndex * 6 + 2] = p.z;
-                    linePositions[lineIndex * 6 + 3] = p2.x;
-                    linePositions[lineIndex * 6 + 4] = p2.y;
-                    linePositions[lineIndex * 6 + 5] = p2.z;
-
-                    // Color node 1
-                    lineColors[lineIndex * 6] = pColor.r * alpha;
-                    lineColors[lineIndex * 6 + 1] = pColor.g * alpha;
-                    lineColors[lineIndex * 6 + 2] = pColor.b * alpha;
-
-                    // Color node 2
-                    let p2Color = cyanColor.clone().lerp(indigoColor, (p2.x + 15) / 30);
-                    // Also check if node 2 is near mouse purely for the line gradient
-                    const d2Mouse = Math.sqrt(Math.pow(p2.x - mouseWorldX, 2) + Math.pow(p2.y - mouseWorldY, 2) + Math.pow(p2.z, 2));
-                    if (d2Mouse < MOUSE_RADIUS) {
-                        p2Color.lerp(mouseColor, (MOUSE_RADIUS - d2Mouse) / MOUSE_RADIUS);
-                    }
-
-                    lineColors[lineIndex * 6 + 3] = p2Color.r * alpha;
-                    lineColors[lineIndex * 6 + 4] = p2Color.g * alpha;
-                    lineColors[lineIndex * 6 + 5] = p2Color.b * alpha;
-
-                    lineIndex++;
-                }
+                const qMix = THREE.MathUtils.clamp((q.x + 12) / 24, 0, 1);
+                colorB.copy(cyan).lerp(violet, qMix);
+                buffers.lineColors[offset] = colorA.r * alpha;
+                buffers.lineColors[offset + 1] = colorA.g * alpha;
+                buffers.lineColors[offset + 2] = colorA.b * alpha;
+                buffers.lineColors[offset + 3] = colorB.r * alpha;
+                buffers.lineColors[offset + 4] = colorB.g * alpha;
+                buffers.lineColors[offset + 5] = colorB.b * alpha;
+                lineIndex++;
             }
         }
 
-        // 3. Update Buffers
-        pointsRef.current.geometry.attributes.position.needsUpdate = true;
-        pointsRef.current.geometry.attributes.color.needsUpdate = true;
-
-        linesRef.current.geometry.setDrawRange(0, lineIndex * 2);
-        linesRef.current.geometry.attributes.position.needsUpdate = true;
-        linesRef.current.geometry.attributes.color.needsUpdate = true;
-
-        // Very slow global rotation applied to the groups
-        pointsRef.current.rotation.y += 0.001;
-        linesRef.current.rotation.y += 0.001;
-        pointsRef.current.rotation.x = Math.sin(Date.now() * 0.0001) * 0.05;
-        linesRef.current.rotation.x = Math.sin(Date.now() * 0.0001) * 0.05;
+        const pointGeometry = pointsRef.current.geometry;
+        const lineGeometry = linesRef.current.geometry;
+        (pointGeometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+        (pointGeometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+        lineGeometry.setDrawRange(0, lineIndex * 2);
+        (lineGeometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+        (lineGeometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+        pointsRef.current.rotation.y += dt * 0.025;
+        linesRef.current.rotation.y = pointsRef.current.rotation.y;
+        pointsRef.current.rotation.x = Math.sin(performance.now() * 0.00012) * 0.025;
+        linesRef.current.rotation.x = pointsRef.current.rotation.x;
     });
 
     return (
-        <group position={[0, 0, -5]}>
-            {/* Draw the connecting lines */}
+        <group position={[0, 0, -4]}>
             <lineSegments ref={linesRef}>
                 <bufferGeometry>
-                    <bufferAttribute attach="attributes-position" count={maxLineCount * 2} args={[linePositions, 3]} />
-                    <bufferAttribute attach="attributes-color" count={maxLineCount * 2} args={[lineColors, 3]} />
+                    <bufferAttribute attach="attributes-position" count={MAX_LINES * 2} args={[buffers.lines, 3]} />
+                    <bufferAttribute attach="attributes-color" count={MAX_LINES * 2} args={[buffers.lineColors, 3]} />
                 </bufferGeometry>
-                <lineBasicMaterial vertexColors transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+                <lineBasicMaterial vertexColors transparent opacity={0.72} depthWrite={false} blending={THREE.AdditiveBlending} />
             </lineSegments>
-
-            {/* Draw the node points */}
             <points ref={pointsRef}>
                 <bufferGeometry>
-                    <bufferAttribute attach="attributes-position" count={PARTICLE_COUNT} args={[pointPositions, 3]} />
-                    <bufferAttribute attach="attributes-color" count={PARTICLE_COUNT} args={[pointColors, 3]} />
+                    <bufferAttribute attach="attributes-position" count={PARTICLE_COUNT} args={[buffers.points, 3]} />
+                    <bufferAttribute attach="attributes-color" count={PARTICLE_COUNT} args={[buffers.pointColors, 3]} />
                 </bufferGeometry>
-                <pointsMaterial size={0.08} vertexColors transparent depthWrite={false} blending={THREE.AdditiveBlending} sizeAttenuation={true} />
+                <pointsMaterial size={size.width < 640 ? 0.075 : 0.09} vertexColors transparent opacity={0.9} depthWrite={false} blending={THREE.AdditiveBlending} sizeAttenuation />
             </points>
         </group>
     );
